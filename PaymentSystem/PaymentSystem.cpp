@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <windows.h>
 #include <cstdio>
@@ -206,7 +206,7 @@ private:
         return 5;
     }
 
-    static double GetCurrencyCofficient()
+    static int GetCurrencyCofficient()
     {
         if (currency == 2) return 72;
         else if (currency == 3) return 82;
@@ -231,7 +231,7 @@ public:
     {
         int balance = GetBalance(number);
         ofstream fout(CardFileMeneger::GetFileName(number));
-        fout << balance + newValue;
+        fout << (balance + newValue) * GetCurrencyCofficient();
         fout.close();
     }
 
@@ -256,11 +256,11 @@ public:
     {
         int Balance = GetBalance(sender);
         ofstream fout(CardFileMeneger::GetFileName(sender));
-        fout << Balance - amount;
+        fout << (Balance - amount) * GetCurrencyCofficient();
         fout.close();
-        Balance = GetBalance(recipient);
+        Balance = GetBalance(recipient) * GetCurrencyCofficient();
         fout.open(CardFileMeneger::GetFileName(recipient));
-        fout << Balance + (amount - amount / 100 * GetCommision(sender, recipient));
+        fout << (Balance + (amount - amount / 100 * GetCommision(sender, recipient))) * GetCurrencyCofficient();
         fout.close();
     }
 };
@@ -299,13 +299,13 @@ int main()
 
         if (cmd == "add" || cmd == "1")
         {
-            if (CardCorrectMeneger::IsNumberCorrect(cards.cardNumber))
+            if (CardOperations::Find(cards.cardNumber, cards.cardsList, cards.cardsCount) == -1)
             {
                 CardOperations::Add(cards.cardNumber, cards.cardsList, cards.cardsCount);
                 CardOperations::BalanceUpdate(cards.cardNumber, 0);
                 PrintMeneger::MessageWithColor("Done!", 2);
             }
-            else PrintMeneger::MessageWithColor("Incorrect number", 4);
+            else PrintMeneger::MessageWithColor("This bank card already exists", 4);
         }
 
         else if (cmd == "balance" || cmd == "2")
