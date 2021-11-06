@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <cstdio>
 #include <filesystem>
+#include <string>
 
 using namespace std;
 
@@ -10,26 +11,23 @@ HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 
 class Cards
 {
+private:
+
+    static string PaymentSystems[10];
+
 public:
-    long long cardsList[100] = {};
-    int cardsCount = 0;
-    long long cardNumber = 0;
+    long long list[100] = {};
+    int count = 0;
+    long long number = 0;
 
     static string PaymentSystem(long long number)
     {
-        short i = number % 10;
-        if (i == 1) return "Diners Club enRoute";
-        else if (i == 2) return "МИР";
-        else if (i == 3) return "American Express";
-        else if (i == 4) return "VISA";
-        else if (i == 5) return "MasterCard";
-        else if (i == 6) return "Maestro";
-        else if (i == 7) return "УЭК";
-        else if (i == 8) return "Телекоммуникация";
-        else return "Государственный сектор";
+        return PaymentSystems[number % 10];
     }
-
 };
+
+string Cards::PaymentSystems[10] = { "Государственный сектор", "Diners Club enRoute", "МИР" , "American Express",
+   "VISA" , "MasterCard" , "Maestro" , "УЭК" , "Телекоммуникация" , "Государственный сектор" };
 
 Cards cards;
 
@@ -63,18 +61,19 @@ public:
         SetConsoleTextAttribute(h, 7);
     }
 
-    static void InfoRemittance(long long sender, long long recipient)
+    static void InfoRemittance(long long sender, long long recipient, int cofficient)
     {
         cout << cards.PaymentSystem(sender) + " ----> " + cards.PaymentSystem(recipient) << endl;
-        if (sender % 10 == recipient % 10) MessageWithColor("Commission: 0%", 2);
-        else MessageWithColor("Commission: 5%", 4);
+        string str = "Comission: " + to_string(cofficient) + "%";
+        if (cofficient == 0) MessageWithColor(str, 2);
+        else MessageWithColor(str, 4);
     }
 
-    static void DisplayAllCard(long long arr[], int size)
+    static void DisplayAllCard(Cards& cards)
     {
         cout << endl;
-        for (int i = 0; i < size; i++)
-            cout << "\t" << i + 1 << ". " << arr[i] << "\t" << cards.PaymentSystem(arr[i]) << endl;
+        for (int i = 0; i < cards.count; i++)
+            cout << "\t" << i + 1 << ". " << cards.list[i] << "\t" << cards.PaymentSystem(cards.list[i]) << endl;
         cout << endl;
     }
 
@@ -96,8 +95,8 @@ public:
 
     static bool IsCorrectCmd(string cmd)
     {
-        return cmd == "add" || cmd == "1" || cmd == "balance" || cmd == "2" || cmd == "update" || cmd == "3"
-            || cmd == "remittance" || cmd == "4" || cmd == "delete" || cmd == "5";
+        for (int i = 0; i < 10; i++) if (isCorrectCmd[i] == cmd) return true;
+        return false;
     }
 
     static void CycleEnterNumber(long long& number, bool flag)
@@ -106,12 +105,12 @@ public:
         {
             cout << "Card number: ";
             cin >> number;
-            if (number == cards.cardNumber && flag) PrintMeneger::MessageWithColor("You can't translate to yourself", 4);
-            else if (CardCorrectMeneger::IsNumberCorrect(cards.cardNumber)) break;
+            if (number == cards.number && flag) PrintMeneger::MessageWithColor("You can't translate to yourself", 4);
+            else if (CardCorrectMeneger::IsNumberCorrect(cards.number)) break;
             else PrintMeneger::MessageWithColor("Incorrect card Number", 4);
         }
     }
-    static void CycleEnterNumber(int& number, string& symbol)
+    static void CycleEnterNumber(int& number, string[])
     {
         while (true)
         {
@@ -119,11 +118,10 @@ public:
             if (number <= 3 && number >= 1) break;
             else PrintMeneger::MessageWithColor("Incorrect number", 4);
         }
-        if (number == 1) symbol = "руб.";
-        else if (number == 2) symbol = "$";
-        else symbol = "EUR";
     }
 private:
+    static string isCorrectCmd[10];
+
     static int GetDigitCount(long long n)
     {
         int counter = 0;
@@ -134,6 +132,7 @@ private:
         }
         return counter;
     }
+
     static bool IsLuhnCorrect(long long n)
     {
         int sum = 0;
@@ -151,33 +150,36 @@ private:
     }
 };
 
+string CardCorrectMeneger::isCorrectCmd[10] = {"1", "2", "3", "4", "5",
+    "add", "balance", "update", "remittance", "delete"};
+
 class CardFileMeneger
 {
 public:
 
-    static void CreateFileWithBalance(int size, long long arr[])
+    static void CreateFileWithBalance(Cards& cards)
     {
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < cards.count; i++)
         {
-            ofstream fout(CardFileMeneger::GetFileName(arr[i]));
+            ofstream fout(CardFileMeneger::GetFileName(cards.list[i]));
             fout << rand() * 10;
             fout.close();
         }
     }
 
-    static void SaveList(int n, long long arr[])
+    static void SaveList(Cards& cards)
     {
         ofstream fout("db.txt");
-        fout << n << endl;
-        for (int i = 0; i < n; i++) fout << arr[i] << endl;
+        fout << cards.count << endl;
+        for (int i = 0; i < cards.count; i++) fout << cards.list[i] << endl;
         fout.close();
     }
 
-    static void LoadList(int& n, long long arr[])
+    static void LoadList(Cards& cards)
     {
         ifstream fin("db.txt");
-        fin >> n;
-        for (int i = 0; i < n; i++) fin >> arr[i];
+        fin >> cards.count;
+        for (int i = 0; i < cards.count; i++) fin >> cards.list[i];
         fin.close();
     }
 
@@ -193,30 +195,23 @@ public:
         return "Cards\\" + number_s + ".txt";
     }
 
-    static void DeleteCardFile(long long, long long[], int&);
+    static void DeleteCardFile(Cards& cards);
 };
 
 class CardOperations
 {
 private:
 
-    static int GetCommision(long long sender, long long recipient)
+    static int GetCurrency()
     {
-        if (sender % 10 == recipient % 10) return 0;
-        return 5;
-    }
-
-    static int GetCurrencyCofficient()
-    {
-        if (currency == 2) return 72;
-        else if (currency == 3) return 82;
-        return 1;
+        return cofficient[flag - 1];
     }
 
 public:
 
-    static int currency;
-    static string currencySymbol;
+    static int flag;
+    static int cofficient[3];
+    static string symbol[3];
 
     static double GetBalance(long long number)
     {
@@ -224,59 +219,65 @@ public:
         int balance;
         fin >> balance;
         fin.close();
-        return balance / GetCurrencyCofficient();
+        return balance / GetCurrency();
     }
 
     static void BalanceUpdate(long long number, int newValue)
     {
-        int balance = GetBalance(number);
+        int balance = (int)GetBalance(number);
         ofstream fout(CardFileMeneger::GetFileName(number));
-        fout << (balance + newValue) * GetCurrencyCofficient();
+        fout << (balance + newValue) * GetCurrency();
         fout.close();
     }
 
-    static int Find(long long number, long long arr[], int size)
+    static int Find(Cards& cards)
     {
-        for (int i = 0; i < size; i++) if (arr[i] == number) return i;
+        for (int i = 0; i < cards.count; i++) if (cards.list[i] == cards.number) return i;
         return -1;
     }
 
-    static void Add(long long number, long long arr[], int& size)
+    static void Add(Cards& cards)
     {
-        for (int i = 0; i < size; i++) if (arr[i] == number) return;
-        arr[size] = number;
-        size++;
-        ofstream fout(CardFileMeneger::GetFileName(number));
+        cards.list[cards.count] = cards.number;
+        cards.count++;
+        ofstream fout(CardFileMeneger::GetFileName(cards.number));
         fout << 0;
         fout.close();
-        CardFileMeneger::SaveList(size, arr);
+        CardFileMeneger::SaveList(cards);
     }
 
     static void Remittance(long long sender, long long recipient, int amount)
     {
-        int Balance = GetBalance(sender);
+        int Balance = (int)GetBalance(sender);
         ofstream fout(CardFileMeneger::GetFileName(sender));
-        fout << (Balance - amount) * GetCurrencyCofficient();
+        fout << (Balance - amount) * GetCurrency();
         fout.close();
-        Balance = GetBalance(recipient) * GetCurrencyCofficient();
+        Balance = (int)GetBalance(recipient) * GetCurrency();
         fout.open(CardFileMeneger::GetFileName(recipient));
-        fout << (Balance + (amount - amount / 100 * GetCommision(sender, recipient))) * GetCurrencyCofficient();
+        fout << (Balance + (amount - amount / 100 * GetCommision(sender, recipient))) * GetCurrency();
         fout.close();
     }
+
+    static int GetCommision(long long sender, long long recipient)
+    {
+        return (int)abs(sender % 10 - recipient % 10);
+    }
+
 };
 
-int CardOperations::currency = 1;
-string CardOperations::currencySymbol = "руб.";
+int CardOperations::cofficient[3] = { 1, 72, 82 };
+int CardOperations::flag = 1;
+string CardOperations::symbol[3] = { "руб.", "$", "EUR" };
 
 CardOperations Currency;
 
-void CardFileMeneger::DeleteCardFile(long long number, long long arr[], int& size)
+void CardFileMeneger::DeleteCardFile(Cards& cards)
 {
-    remove(CardFileMeneger::GetFileName(number).c_str());
-    int index = CardOperations::Find(number, arr, size);
-    for (int i = index; i < size - 1; i++) arr[i] = arr[i + 1];
-    size--;
-    CardFileMeneger::SaveList(size, arr);
+    remove(CardFileMeneger::GetFileName(cards.number).c_str());
+    int index = CardOperations::Find(cards);
+    for (int i = index; i < cards.count - 1; i++) cards.list[i] = cards.list[i + 1];
+    cards.count--;
+    CardFileMeneger::SaveList(cards);
 }
 
 int main()
@@ -286,8 +287,8 @@ int main()
 
     PrintMeneger::Greting();
 
-    CardFileMeneger::LoadList(cards.cardsCount, cards.cardsList);
-    CardFileMeneger::CreateFileWithBalance(cards.cardsCount, cards.cardsList);
+    CardFileMeneger::LoadList(cards);
+    CardFileMeneger::CreateFileWithBalance(cards);
 
     cout << "Enter a command: ";
     string cmd;
@@ -295,14 +296,14 @@ int main()
 
     while (cmd != "exit")
     {
-        if (CardCorrectMeneger::IsCorrectCmd(cmd))CardCorrectMeneger::CycleEnterNumber(cards.cardNumber, false);
+        if (CardCorrectMeneger::IsCorrectCmd(cmd))CardCorrectMeneger::CycleEnterNumber(cards.number, false);
 
         if (cmd == "add" || cmd == "1")
         {
-            if (CardOperations::Find(cards.cardNumber, cards.cardsList, cards.cardsCount) == -1)
+            if (CardOperations::Find(cards) == -1)
             {
-                CardOperations::Add(cards.cardNumber, cards.cardsList, cards.cardsCount);
-                CardOperations::BalanceUpdate(cards.cardNumber, 0);
+                CardOperations::Add(cards);
+                CardOperations::BalanceUpdate(cards.number, 0);
                 PrintMeneger::MessageWithColor("Done!", 2);
             }
             else PrintMeneger::MessageWithColor("This bank card already exists", 4);
@@ -310,8 +311,8 @@ int main()
 
         else if (cmd == "balance" || cmd == "2")
         {
-            if (CardOperations::Find(cards.cardNumber, cards.cardsList, cards.cardsCount) != -1)
-                cout << Cards::PaymentSystem(cards.cardNumber) << endl << CardOperations::GetBalance(cards.cardNumber) << " " << Currency.currencySymbol << endl;
+            if (CardOperations::Find(cards) != -1)
+                cout << Cards::PaymentSystem(cards.number) << endl << CardOperations::GetBalance(cards.number) << " " << Currency.symbol[Currency.flag-1] << endl;
             else
                 PrintMeneger::MessageWithColor("Card does not exist", 4);
         }
@@ -321,9 +322,9 @@ int main()
             int newValue;
             PrintMeneger::MessageWithColor("Enter the amount: ", 2);
             cin >> newValue;
-            if (CardOperations::Find(cards.cardNumber, cards.cardsList, cards.cardsCount) != -1 && newValue > 0)
+            if (CardOperations::Find(cards) != -1 && newValue > 0)
             {
-                CardOperations::BalanceUpdate(cards.cardNumber, newValue);
+                CardOperations::BalanceUpdate(cards.number, newValue);
                 PrintMeneger::MessageWithColor("Done!", 2);
             }
             else PrintMeneger::MessageWithColor("Incorrect number", 4);
@@ -334,16 +335,16 @@ int main()
             long long newCardNumber;
             int amount;
             CardCorrectMeneger::CycleEnterNumber(newCardNumber, true);
-            PrintMeneger::InfoRemittance(cards.cardNumber, newCardNumber);
+            PrintMeneger::InfoRemittance(cards.number, newCardNumber, CardOperations::GetCommision(cards.number, newCardNumber));
             cout << "Transfer amount: " << endl;
             cin >> amount;
-            if (amount > CardOperations::GetBalance(cards.cardNumber))
+            if (amount > CardOperations::GetBalance(cards.number))
                 PrintMeneger::MessageWithColor("Insufficient funds", 4);
             else if (amount <= 0)
                 PrintMeneger::MessageWithColor("Incorrect number", 4);
             else
             {
-                CardOperations::Remittance(cards.cardNumber, newCardNumber, amount);
+                CardOperations::Remittance(cards.number, newCardNumber, amount);
                 PrintMeneger::MessageWithColor("Done!", 2);
             }
 
@@ -351,9 +352,9 @@ int main()
 
         else if (cmd == "delete" || cmd == "5")
         {
-            if (CardOperations::Find(cards.cardNumber, cards.cardsList, cards.cardsCount) != -1)
+            if (CardOperations::Find(cards) != -1)
             {
-                CardFileMeneger::DeleteCardFile(cards.cardNumber, cards.cardsList, cards.cardsCount);
+                CardFileMeneger::DeleteCardFile(cards);
                 PrintMeneger::MessageWithColor("Done!", 2);
             }
             else
@@ -361,12 +362,12 @@ int main()
         }
 
         else if (cmd == "display" || cmd == "6")
-            PrintMeneger::DisplayAllCard(cards.cardsList, cards.cardsCount);
+            PrintMeneger::DisplayAllCard(cards);
 
         else if (cmd == "settings" || cmd == "7")
         {
             PrintMeneger::DisplaySettings();
-            CardCorrectMeneger::CycleEnterNumber(Currency.currency, Currency.currencySymbol);
+            CardCorrectMeneger::CycleEnterNumber(Currency.flag, Currency.symbol);
         }
 
         else
@@ -376,7 +377,7 @@ int main()
         cin >> cmd;
     }
 
-    CardFileMeneger::SaveList(cards.cardsCount, cards.cardsList);
+    CardFileMeneger::SaveList(cards);
     cout << "Bye!";
 
     return 0;
